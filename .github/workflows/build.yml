@@ -25,13 +25,13 @@ jobs:
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow \
-            --icon=tagflow_icon.png \
+            --icon=app_icon.png \
             --hidden-import PyQt6 \
             --hidden-import PyQt6.QtCore \
             --hidden-import PyQt6.QtGui \
             --hidden-import PyQt6.QtWidgets \
             --hidden-import send2trash \
-            --add-data "tagflow_icon.png:." \
+            --add-data "app_icon.png:." \
             --add-data "version.txt:." \
             main.py
 
@@ -59,13 +59,13 @@ jobs:
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow `
-            --icon=tagflow_icon.png `
+            --icon=app_icon.png `
             --hidden-import PyQt6 `
             --hidden-import PyQt6.QtCore `
             --hidden-import PyQt6.QtGui `
             --hidden-import PyQt6.QtWidgets `
             --hidden-import send2trash `
-            --add-data "tagflow_icon.png;." `
+            --add-data "app_icon.png;." `
             --add-data "version.txt;." `
             main.py
 
@@ -93,13 +93,13 @@ jobs:
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow \
-            --icon=tagflow_icon.png \
+            --icon=app_icon.png \
             --hidden-import PyQt6 \
             --hidden-import PyQt6.QtCore \
             --hidden-import PyQt6.QtGui \
             --hidden-import PyQt6.QtWidgets \
             --hidden-import send2trash \
-            --add-data "tagflow_icon.png:." \
+            --add-data "app_icon.png:." \
             --add-data "version.txt:." \
             main.py
 
