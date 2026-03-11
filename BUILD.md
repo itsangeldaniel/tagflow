@@ -1,53 +1,158 @@
-# Compilar TagFlow como ejecutable
+name: Build TagFlow
 
-## Requisitos
-```bash
-pip install pyinstaller send2trash PyQt6 --break-system-packages
-```
+on:
+  push:
+    tags:
+      - 'v*'   # Se activa cuando publicas una versión como v1.0.0
 
-## Antes de compilar
-1. Edita `updater.py` y pon tu usuario y repo de GitHub:
-   ```python
-   GITHUB_OWNER = "tu-usuario-github"
-   GITHUB_REPO  = "tagflow"
-   ```
-2. Actualiza `version.txt` con la versión actual (ej: `1.0.0`)
+jobs:
 
-## Compilar
+  # ── Linux ──────────────────────────────────────────────────
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-### Linux
-```bash
-pyinstaller tagflow.spec
-# Ejecutable en: dist/TagFlow
-```
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
 
-### Windows (desde Windows)
-```bash
-pyinstaller tagflow.spec
-# Ejecutable en: dist/TagFlow.exe
-```
+      - name: Instalar dependencias
+        run: |
+          pip install PyQt6 send2trash pyinstaller Pillow
 
-### macOS (desde Mac)
-```bash
-pyinstaller tagflow.spec
-# App en: dist/TagFlow.app
-```
+      - name: Compilar
+        run: |
+          pyinstaller --onefile --windowed --name TagFlow \
+            --icon=tagflow_icon.png \
+            --hidden-import PyQt6 \
+            --hidden-import PyQt6.QtCore \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import send2trash \
+            --add-data "tagflow_icon.png:." \
+            main.py
 
-## Publicar una actualización
-1. Incrementa la versión en `version.txt` (ej: `1.0.1`)
-2. Compila el ejecutable para cada plataforma
-3. Ve a GitHub → tu repo → Releases → "Create new release"
-4. Tag: `v1.0.1`
-5. Sube los archivos:
-   - `TagFlow` (Linux)
-   - `TagFlow.exe` (Windows)
-   - `TagFlow.dmg` (macOS)
-6. Publica el release
+      - name: Subir ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: TagFlow-Linux
+          path: dist/TagFlow
 
-Los usuarios con TagFlow abierto verán el aviso de actualización
-automáticamente en los próximos 30 segundos de uso.
+  # ── Windows ────────────────────────────────────────────────
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
 
-## Notas
-- El ejecutable pesa ~80-120 MB (PyQt6 es grande)
-- El auto-update requiere conexión a internet solo para verificar
-- Los datos del usuario (carpetas, colores, notas) nunca se tocan
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: |
+          pip install PyQt6 send2trash pyinstaller Pillow
+
+      - name: Compilar
+        run: |
+          pyinstaller --onefile --windowed --name TagFlow `
+            --icon=tagflow_icon.png `
+            --hidden-import PyQt6 `
+            --hidden-import PyQt6.QtCore `
+            --hidden-import PyQt6.QtGui `
+            --hidden-import PyQt6.QtWidgets `
+            --hidden-import send2trash `
+            --add-data "tagflow_icon.png;." `
+            main.py
+
+      - name: Subir ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: TagFlow-Windows
+          path: dist/TagFlow.exe
+
+  # ── macOS ──────────────────────────────────────────────────
+  build-macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Instalar dependencias
+        run: |
+          pip install PyQt6 send2trash pyinstaller Pillow
+
+      - name: Compilar
+        run: |
+          pyinstaller --onefile --windowed --name TagFlow \
+            --icon=tagflow_icon.png \
+            --hidden-import PyQt6 \
+            --hidden-import PyQt6.QtCore \
+            --hidden-import PyQt6.QtGui \
+            --hidden-import PyQt6.QtWidgets \
+            --hidden-import send2trash \
+            --add-data "tagflow_icon.png:." \
+            main.py
+
+      - name: Subir ejecutable
+        uses: actions/upload-artifact@v4
+        with:
+          name: TagFlow-macOS
+          path: dist/TagFlow
+
+  # ── Crear Release con los 3 ejecutables ───────────────────
+  release:
+    needs: [build-linux, build-windows, build-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Descargar Linux
+        uses: actions/download-artifact@v4
+        with:
+          name: TagFlow-Linux
+          path: artifacts/linux
+
+      - name: Descargar Windows
+        uses: actions/download-artifact@v4
+        with:
+          name: TagFlow-Windows
+          path: artifacts/windows
+
+      - name: Descargar macOS
+        uses: actions/download-artifact@v4
+        with:
+          name: TagFlow-macOS
+          path: artifacts/macos
+
+      - name: Renombrar ejecutables
+        run: |
+          mv artifacts/linux/TagFlow artifacts/TagFlow-Linux
+          mv artifacts/windows/TagFlow.exe artifacts/TagFlow-Windows.exe
+          mv artifacts/macos/TagFlow artifacts/TagFlow-macOS
+          chmod +x artifacts/TagFlow-Linux artifacts/TagFlow-macOS
+
+      - name: Crear Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/TagFlow-Linux
+            artifacts/TagFlow-Windows.exe
+            artifacts/TagFlow-macOS
+          body: |
+            ## TagFlow ${{ github.ref_name }}
+
+            ### Descargar
+            - **Linux** → `TagFlow-Linux`
+            - **Windows** → `TagFlow-Windows.exe`
+            - **macOS** → `TagFlow-macOS`
+
+            ### Instalación
+            - **Linux/macOS**: dar permiso de ejecución → `chmod +x TagFlow-Linux`
+            - **Windows**: doble clic en el `.exe`
