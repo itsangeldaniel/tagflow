@@ -7,7 +7,6 @@ on:
 
 jobs:
 
-  # ── Linux ──────────────────────────────────────────────────
   build-linux:
     runs-on: ubuntu-latest
     steps:
@@ -30,7 +29,6 @@ jobs:
           name: TagFlow-Linux
           path: dist/TagFlow
 
-  # ── Windows ────────────────────────────────────────────────
   build-windows:
     runs-on: windows-latest
     steps:
@@ -39,7 +37,8 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install PyQt6 send2trash pyinstaller
-      - run: |
+      - name: Compilar sin icono
+        run: |
           pyinstaller --onefile --windowed --name TagFlow `
             --hidden-import PyQt6 `
             --hidden-import PyQt6.QtCore `
@@ -48,12 +47,13 @@ jobs:
             --hidden-import send2trash `
             --add-data "tagflow_icon.png;." `
             main.py
+        env:
+          PYINSTALLER_SKIP_TAG_ICON: "1"
       - uses: actions/upload-artifact@v4
         with:
           name: TagFlow-Windows
           path: dist/TagFlow.exe
 
-  # ── macOS ──────────────────────────────────────────────────
   build-macos:
     runs-on: macos-latest
     steps:
@@ -62,8 +62,9 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install PyQt6 send2trash pyinstaller
-      - run: |
-          pyinstaller --onefile --windowed --name TagFlow \
+      - name: Compilar sin bundle
+        run: |
+          pyinstaller --onefile --name TagFlow \
             --hidden-import PyQt6 \
             --hidden-import PyQt6.QtCore \
             --hidden-import PyQt6.QtGui \
@@ -76,7 +77,6 @@ jobs:
           name: TagFlow-macOS
           path: dist/TagFlow
 
-  # ── Release ────────────────────────────────────────────────
   release:
     needs: [build-linux, build-windows, build-macos]
     runs-on: ubuntu-latest

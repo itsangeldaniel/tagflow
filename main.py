@@ -9,7 +9,7 @@ app.setApplicationName("TagFlow")
 app.setStyle("Fusion")
 app.setQuitOnLastWindowClosed(False)
 
-_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "tagflow_icon.png")
+_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app_icon.png")
 if os.path.exists(_ico):
     app.setWindowIcon(QIcon(_ico))
 
