@@ -1,0 +1,30 @@
+# ── Datos locales del usuario (nunca subir) ───────────────────
+tagflow.db
+tagflow_config.json
+.tagflow_config.json
+session.json
+remember.json
+
+# ── Firebase / auth (contiene API keys) ──────────────────────
+auth.py
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# ── PyInstaller (archivos de compilación) ────────────────────
+dist/
+build/
+*.spec.bak
+
+# ── PyCharm ───────────────────────────────────────────────────
+.idea/
+*.iml
+
+# ── Sistema ───────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
