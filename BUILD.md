@@ -3,7 +3,7 @@ name: Build TagFlow
 on:
   push:
     tags:
-      - 'v*'   # Se activa cuando publicas una versión como v1.0.0
+      - 'v*'
 
 jobs:
 
@@ -19,13 +19,11 @@ jobs:
           python-version: '3.12'
 
       - name: Instalar dependencias
-        run: |
-          pip install PyQt6 send2trash pyinstaller Pillow
+        run: pip install PyQt6 send2trash pyinstaller Pillow
 
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow \
-            --icon=tagflow_icon.png \
             --hidden-import PyQt6 \
             --hidden-import PyQt6.QtCore \
             --hidden-import PyQt6.QtGui \
@@ -52,13 +50,21 @@ jobs:
           python-version: '3.12'
 
       - name: Instalar dependencias
+        run: pip install PyQt6 send2trash pyinstaller Pillow
+
+      - name: Convertir icono a .ico
         run: |
-          pip install PyQt6 send2trash pyinstaller Pillow
+          python -c "
+          from PIL import Image
+          img = Image.open('tagflow_icon.png').convert('RGBA')
+          img.save('tagflow_icon.ico', format='ICO', sizes=[(256,256),(128,128),(64,64),(32,32),(16,16)])
+          print('icono convertido OK')
+          "
 
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow `
-            --icon=tagflow_icon.png `
+            --icon=tagflow_icon.ico `
             --hidden-import PyQt6 `
             --hidden-import PyQt6.QtCore `
             --hidden-import PyQt6.QtGui `
@@ -85,13 +91,25 @@ jobs:
           python-version: '3.12'
 
       - name: Instalar dependencias
+        run: pip install PyQt6 send2trash pyinstaller Pillow
+
+      - name: Convertir icono a .icns
         run: |
-          pip install PyQt6 send2trash pyinstaller Pillow
+          mkdir -p tagflow_icon.iconset
+          python3 -c "
+          from PIL import Image
+          img = Image.open('tagflow_icon.png').convert('RGBA')
+          sizes = [16,32,64,128,256,512]
+          for s in sizes:
+              img.resize((s,s), Image.LANCZOS).save(f'tagflow_icon.iconset/icon_{s}x{s}.png')
+              img.resize((s*2,s*2), Image.LANCZOS).save(f'tagflow_icon.iconset/icon_{s}x{s}@2x.png')
+          "
+          iconutil -c icns tagflow_icon.iconset -o tagflow_icon.icns
 
       - name: Compilar
         run: |
           pyinstaller --onefile --windowed --name TagFlow \
-            --icon=tagflow_icon.png \
+            --icon=tagflow_icon.icns \
             --hidden-import PyQt6 \
             --hidden-import PyQt6.QtCore \
             --hidden-import PyQt6.QtGui \
@@ -154,5 +172,5 @@ jobs:
             - **macOS** → `TagFlow-macOS`
 
             ### Instalación
-            - **Linux/macOS**: dar permiso de ejecución → `chmod +x TagFlow-Linux`
+            - **Linux/macOS**: `chmod +x TagFlow-Linux && ./TagFlow-Linux`
             - **Windows**: doble clic en el `.exe`
