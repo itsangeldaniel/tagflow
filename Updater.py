@@ -13,16 +13,15 @@ import platform
 import subprocess
 
 # ── Configura esto con tu repo ────────────────────────────────
-GITHUB_OWNER   = "TU_USUARIO"          # ← cambia esto
-GITHUB_REPO    = "tagflow"             # ← cambia esto
-CURRENT_VERSION = "1.0.0"             # ← se actualiza automáticamente
+GITHUB_OWNER    = "itsangeld67"
+GITHUB_REPO     = "tagflow"
+CURRENT_VERSION = "1.0.0"
 API_URL = f"https://api.github.com/repos/{GITHUB_OWNER}/{GITHUB_REPO}/releases/latest"
 
 SISTEMA = platform.system()  # Windows / Darwin / Linux
 
 
 def get_version_file() -> str:
-    """Ruta al archivo version.txt junto al ejecutable."""
     if getattr(sys, "frozen", False):
         base = os.path.dirname(sys.executable)
     else:
@@ -39,7 +38,6 @@ def leer_version_local() -> str:
 
 
 def _comparar_versiones(local: str, remota: str) -> bool:
-    """Retorna True si la versión remota es más nueva."""
     try:
         def parse(v):
             return tuple(int(x) for x in v.lstrip("v").split("."))
@@ -49,7 +47,6 @@ def _comparar_versiones(local: str, remota: str) -> bool:
 
 
 def _asset_para_sistema(assets: list) -> dict | None:
-    """Elige el asset correcto según el sistema operativo."""
     keywords = {
         "Windows": [".exe", "windows", "win"],
         "Darwin":  [".dmg", ".app", "macos", "darwin", "mac"],
@@ -64,10 +61,6 @@ def _asset_para_sistema(assets: list) -> dict | None:
 
 
 def verificar_actualizacion() -> dict | None:
-    """
-    Consulta GitHub y retorna info de la nueva versión si existe.
-    Retorna None si no hay actualización o hay error.
-    """
     try:
         import urllib.request
         req = urllib.request.Request(
@@ -81,18 +74,18 @@ def verificar_actualizacion() -> dict | None:
         version_local  = leer_version_local()
 
         if not _comparar_versiones(version_local, version_remota):
-            return None  # Ya está actualizado
+            return None
 
         asset = _asset_para_sistema(data.get("assets", []))
         if not asset:
             return None
 
         return {
-            "version":     version_remota,
-            "url":         asset["browser_download_url"],
-            "nombre":      asset["name"],
-            "notas":       data.get("body", ""),
-            "tamaño_mb":   round(asset["size"] / (1024 * 1024), 1),
+            "version":   version_remota,
+            "url":       asset["browser_download_url"],
+            "nombre":    asset["name"],
+            "notas":     data.get("body", ""),
+            "tamaño_mb": round(asset["size"] / (1024 * 1024), 1),
         }
     except Exception as e:
         print(f"[UPDATER] Error consultando: {e}")
@@ -100,10 +93,6 @@ def verificar_actualizacion() -> dict | None:
 
 
 def descargar_y_aplicar(info: dict, progreso_cb=None) -> bool:
-    """
-    Descarga el nuevo ejecutable y lo aplica.
-    progreso_cb(porcentaje: int) — callback opcional de progreso.
-    """
     try:
         import urllib.request
 
@@ -111,7 +100,6 @@ def descargar_y_aplicar(info: dict, progreso_cb=None) -> bool:
         tmp_dir  = tempfile.mkdtemp(prefix="tagflow_update_")
         tmp_file = os.path.join(tmp_dir, info["nombre"])
 
-        # ── Descargar con progreso ────────────────────────
         def _reporthook(count, block_size, total_size):
             if total_size > 0 and progreso_cb:
                 pct = min(100, int(count * block_size * 100 / total_size))
@@ -121,7 +109,6 @@ def descargar_y_aplicar(info: dict, progreso_cb=None) -> bool:
         if progreso_cb:
             progreso_cb(100)
 
-        # ── Aplicar según sistema ─────────────────────────
         if SISTEMA == "Windows":
             _aplicar_windows(tmp_file)
         elif SISTEMA == "Darwin":
@@ -137,10 +124,6 @@ def descargar_y_aplicar(info: dict, progreso_cb=None) -> bool:
 
 
 def _aplicar_windows(tmp_exe: str):
-    """
-    Windows: crea un .bat que espera a que TagFlow cierre,
-    reemplaza el .exe y relanza.
-    """
     exe_actual = sys.executable if getattr(sys, "frozen", False) else __file__
     bat = tempfile.NamedTemporaryFile(suffix=".bat", delete=False, mode="w")
     bat.write(f"""@echo off
@@ -155,18 +138,15 @@ del "%~f0"
 
 
 def _aplicar_macos(tmp_dmg: str):
-    """macOS: abre el .dmg para que el usuario arrastre."""
     subprocess.Popen(["open", tmp_dmg])
     sys.exit(0)
 
 
 def _aplicar_linux(tmp_file: str):
-    """Linux: reemplaza el AppImage/binario y relanza."""
     exe_actual = sys.executable if getattr(sys, "frozen", False) \
                  else os.path.join(os.path.dirname(__file__), "TagFlow")
 
     os.chmod(tmp_file, 0o755)
-    # Crear script que reemplaza el binario y relanza
     sh = tempfile.NamedTemporaryFile(suffix=".sh", delete=False, mode="w")
     sh.write(f"""#!/bin/bash
 sleep 1
@@ -181,18 +161,18 @@ rm -- "$0"
     sys.exit(0)
 
 
-# ── Check en background (no bloquea la app) ───────────────────
-
 def check_en_background(on_update_disponible):
     """
-    Llama a on_update_disponible(info_dict) en el hilo principal
-    si hay una actualización disponible.
-    No bloquea el arranque.
+    Llama a on_update_disponible(info_dict) si hay actualización.
+    No bloquea la app — corre en hilo daemon.
     """
     def _worker():
-        info = verificar_actualizacion()
-        if info:
-            on_update_disponible(info)
+        try:
+            info = verificar_actualizacion()
+            if info:
+                on_update_disponible(info)
+        except Exception as e:
+            print(f"[UPDATER] Error en worker: {e}")
 
     t = threading.Thread(target=_worker, daemon=True)
     t.start()

@@ -2,16 +2,11 @@ import sys, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtGui import QIcon
 
 app = QApplication(sys.argv)
 app.setApplicationName("TagFlow")
 app.setStyle("Fusion")
 app.setQuitOnLastWindowClosed(False)
-
-_ico = os.path.join(os.path.dirname(os.path.abspath(__file__)), "")
-if os.path.exists(_ico):
-    app.setWindowIcon(QIcon(_ico))
 
 from core import cargar_config, inicializar_entorno, obtener_discos_disponibles
 
@@ -37,23 +32,27 @@ def iniciar_panel(carpeta_raiz):
 
 def _check_update():
     """Consulta GitHub en background sin bloquear la UI."""
-    from updater import check_en_background
-    check_en_background(_mostrar_update)
+    try:
+        from updater import check_en_background
+        check_en_background(_mostrar_update)
+    except Exception as e:
+        print(f"[UPDATER] Error iniciando check: {e}")
 
 
 def _mostrar_update(info: dict):
-    """Se llama desde el hilo principal si hay update disponible."""
-    from PyQt6.QtCore import QMetaObject, Qt
-    # Asegurar que corre en hilo principal
+    """Se llama desde el hilo de background si hay update disponible."""
     if ventana:
         from PyQt6.QtCore import QTimer
         QTimer.singleShot(0, lambda: _abrir_dialog(info))
 
 
 def _abrir_dialog(info: dict):
-    from ui.update_dialog import UpdateDialog
-    dlg = UpdateDialog(info, parent=ventana)
-    dlg.exec()
+    try:
+        from ui.update_dialog import UpdateDialog
+        dlg = UpdateDialog(info, parent=ventana)
+        dlg.exec()
+    except Exception as e:
+        print(f"[UPDATER] Error mostrando dialog: {e}")
 
 
 def on_disco(disco):

@@ -108,40 +108,46 @@ def _discos_windows() -> list[dict]:
 
 
 def _discos_macos() -> list[dict]:
-    """macOS: usa /Volumes/ donde se montan todos los discos."""
+    """macOS: usa el home del usuario como opción principal (siempre escribible)
+    y discos externos en /Volumes/ que no sean el disco del sistema."""
     discos = []
-    volumes = "/Volumes"
-
-    if not os.path.exists(volumes):
-        info = _info_disco(os.path.expanduser("~"), "Disco Principal")
-        return [info] if info else []
-
     vistos = set()
-    for volumen in os.listdir(volumes):
-        ruta = os.path.join(volumes, volumen)
-        if not os.path.isdir(ruta):
-            continue
-        try:
-            dev_id = os.stat(ruta).st_dev
-            if dev_id in vistos:
+
+    # 1. Siempre ofrecer home del usuario primero (siempre escribible)
+    home = os.path.expanduser("~")
+    try:
+        total, _, libre = shutil.disk_usage(home)
+        dev_id = os.stat(home).st_dev
+        vistos.add(dev_id)
+        if total > 0:
+            discos.append({
+                "ruta": home,
+                "nombre": f"Carpeta personal  (~/{os.path.basename(home)})",
+                "espacio_libre_gb": round(libre / (1024 ** 3), 1),
+                "espacio_total_gb": round(total / (1024 ** 3), 1),
+            })
+    except Exception:
+        pass
+
+    # 2. Discos externos en /Volumes/ (excluir disco del sistema)
+    volumes = "/Volumes"
+    if os.path.exists(volumes):
+        for volumen in os.listdir(volumes):
+            ruta = os.path.join(volumes, volumen)
+            if not os.path.isdir(ruta):
                 continue
-            vistos.add(dev_id)
-        except Exception:
-            continue
-
-        if volumen.lower().replace(" ", "_") in ("macintosh_hd", "macintosh hd"):
-            nombre = "Macintosh HD  (Disco Principal)"
-        else:
-            nombre = volumen
-
-        info = _info_disco(ruta, nombre)
-        if info:
-            discos.append(info)
-
-    if not discos:
-        info = _info_disco(os.path.expanduser("~"), "Disco Principal")
-        if info:
-            discos.append(info)
+            try:
+                dev_id = os.stat(ruta).st_dev
+                if dev_id in vistos:
+                    continue
+                vistos.add(dev_id)
+                if not os.access(ruta, os.W_OK):
+                    continue
+                info = _info_disco(ruta, volumen)
+                if info:
+                    discos.append(info)
+            except Exception:
+                continue
 
     return discos
 
