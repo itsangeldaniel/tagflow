@@ -45,12 +45,10 @@ jobs:
             --hidden-import PyQt6.QtWidgets `
             --hidden-import send2trash `
             main.py
-      - name: Comprimir en zip
-        run: Compress-Archive -Path dist\TagFlow.exe -DestinationPath dist\TagFlow-Windows.zip
       - uses: actions/upload-artifact@v4
         with:
           name: TagFlow-Windows
-          path: dist/TagFlow-Windows.zip
+          path: dist/TagFlow.exe
 
   build-macos:
     runs-on: macos-latest
@@ -60,7 +58,7 @@ jobs:
         with:
           python-version: '3.12'
       - run: pip install PyQt6 send2trash pyinstaller
-      - name: Compilar como app bundle (onedir)
+      - name: Compilar como app bundle
         run: |
           pyinstaller --onedir --windowed --name TagFlow \
             --hidden-import PyQt6 \
@@ -98,18 +96,17 @@ jobs:
           path: artifacts/macos
       - run: |
           mv artifacts/linux/TagFlow artifacts/TagFlow-Linux
-          mv artifacts/windows/TagFlow-Windows.zip artifacts/TagFlow-Windows.zip
+          mv artifacts/windows/TagFlow.exe artifacts/TagFlow-Windows.exe
           mv artifacts/macos/TagFlow-macOS.zip artifacts/TagFlow-macOS.zip
           chmod +x artifacts/TagFlow-Linux
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             artifacts/TagFlow-Linux
-            artifacts/TagFlow-Windows.zip
+            artifacts/TagFlow-Windows.exe
             artifacts/TagFlow-macOS.zip
           body: |
             ## TagFlow ${{ github.ref_name }}
-
-            - **Linux** → `TagFlow-Linux` — dar permiso: `chmod +x TagFlow-Linux` y ejecutar
-            - **Windows** → `TagFlow-Windows.zip` — descomprimir y ejecutar `TagFlow.exe`
-            - **macOS** → `TagFlow-macOS.zip` — descomprimir, clic derecho en `TagFlow.app` → Abrir
+            - **Linux** → `TagFlow-Linux`
+            - **Windows** → `TagFlow-Windows.exe`
+            - **macOS** → `TagFlow-macOS.zip` (descomprimir, clic derecho en TagFlow.app → Abrir)
