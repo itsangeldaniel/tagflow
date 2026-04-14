@@ -1077,23 +1077,29 @@ class MainWindow(QWidget):
         nota_actual  = self._notas.get(nombre, "")
         dlg = CarpetaConfig(nombre, color_actual, nota_actual, self)
         if dlg.exec():
-            _, color, nota = dlg.result_data()
+            nuevo_nombre, color, nota = dlg.result_data()
+
+            # ── Renombrar carpeta si cambió el nombre ──────────
+            if nuevo_nombre and nuevo_nombre != nombre:
+                ruta_vieja = os.path.join(self.carpeta_raiz, nombre)
+                ruta_nueva = os.path.join(self.carpeta_raiz, nuevo_nombre)
+                try:
+                    os.rename(ruta_vieja, ruta_nueva)
+                    # Migrar notas y colores al nuevo nombre
+                    if nombre in self._notas:
+                        self._notas[nuevo_nombre] = self._notas.pop(nombre)
+                    if nombre in FOLDER_COLORS_CUSTOM:
+                        FOLDER_COLORS_CUSTOM[nuevo_nombre] = FOLDER_COLORS_CUSTOM.pop(nombre)
+                    nombre = nuevo_nombre  # usar el nuevo nombre para lo que sigue
+                except Exception as e:
+                    QMessageBox.warning(self, "Error", f"No se pudo renombrar: {e}")
+                    return
+
             if color:
                 FOLDER_COLORS_CUSTOM[nombre] = color
-                if self._email:
-                    try:
-                        import auth as _a
-                        _a.guardar_config_carpeta(self._email, nombre, color=color)
-                    except:
-                        pass
             if nota is not None:
                 self._notas[nombre] = nota
-                if self._email:
-                    try:
-                        import auth as _a
-                        _a.guardar_config_carpeta(self._email, nombre, nota=nota)
-                    except:
-                        pass
+
             self._guardar_config()
             if hasattr(self, '_last_snap'):
                 del self._last_snap
